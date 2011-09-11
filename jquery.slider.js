@@ -16,25 +16,25 @@
 		min: 0,
 		max: 100,
 		step: 1,
-		disabled: false,
+		status: false,
 		tooltip: true,
 		progress: true,
+		disabled: false,
 		tooltipTransform: function(value) { return value; },
+		onStart: function(value) {},
 		onChange: function(value) {},
-		onEnd: function(value) {}
+		onChanged: function(value) {}
 	},
 	
 	$Slider, Mouse_left, Slider_left, Timer,
+	Is_touch_device = 'ontouchend' in document,
 	Mouse_down = 'mousedown.',
 	Mouse_up = 'mouseup.',
 	Mouse_move = 'mousemove.',
 	EventNameSpace = 'slider',
 	
-	_is_touch_device = function() {
-		return 'ontouchend' in document;
-	},
 	_setEventTypes = function() {
-		if ( ! _is_touch_device()) return;
+		if ( ! Is_touch_device) return;
 		Mouse_down = 'touchstart.';
 		Mouse_up = 'touchend.';
 		Mouse_move = 'touchmove.';
@@ -48,11 +48,13 @@
 			$Slider = null;
 			return;
 		}
+		data.options.onStart.call(data.element, data.value);
 		Slider_left = data.slider_left;
 		var _event = event.originalEvent && event.originalEvent.touches ? event.originalEvent.touches[0] : event;
 		Mouse_left = parseFloat(_event.pageX);
 		var left = Mouse_left - Slider_left;
-		_setStepPosition($Slider, left, data.options.onEnd);
+		_setStepPosition($Slider, left);
+		data.options.onChanged.call(data.element, data.value);
 		$Slider = null;
 	},
 	_mouseStart = function(event) {
@@ -64,6 +66,7 @@
 			$Slider = null;
 			return;
 		}
+		data.options.onStart.call(data.element, data.value);
 		Mouse_left = parseFloat(_event.pageX);
 		Slider_left = data.slider_left;
 		if (event.originalEvent && event.originalEvent.touches) {
@@ -91,7 +94,7 @@
 		if (event.originalEvent && event.originalEvent.touches) {
 			data.tooltip.hide();
 		}
-		data.options.onEnd.call(data.element, data.value);
+		data.options.onChanged.call(data.element, data.value);
 		$Slider = null;
 	},
 	_moveHandle = function() {
@@ -99,14 +102,14 @@
 		var left = Mouse_left - Slider_left;
 		_setStepPosition($Slider, left);
 	},
-	_setStepPosition = function($slider, position, callback) {
+	_setStepPosition = function($slider, position) {
 		var data = $slider.data(),
 		prop = Math.round(position / data.step_width),
 		new_value = prop * data.step + data.min;
 		position = prop * data.step_width;
 		if (new_value == data.value) return;
 		_setPosition($slider, position);
-		_setValue($slider, new_value, callback);
+		_setValue($slider, new_value);
 	},
 	_setPosition = function($slider, position) {
 		var data = $slider.data();
@@ -116,7 +119,7 @@
 		if (data.options.progress) data.progress.width(position);
 		data.tooltip.css('left', position);
 	},
-	_setValue = function($slider, value, callback) {
+	_setValue = function($slider, value) {
 		var data = $slider.data(),
 		old_value = data.value;
 		if (value > data.max) value = data.max;
@@ -125,7 +128,14 @@
 		$slider.data('value', value);
 		data.tooltip.html(data.options.tooltipTransform(value));
 		data.options.onChange.call(data.element, value);
-		if (callback) callback.call(data.element, value);
+	},
+	_setStatus = function($slider, value) {
+		var data = $slider.data();
+		if (value < data.min) value = data.min;
+		if (value > data.max) value = data.max;
+		$slider.data('status_value', value);
+		var drawing = _calcNewSize(value, data.min, data.max, data.step, data.slider_width);
+		data.status.width(drawing.position);
 	},
 	_calcNewSize = function(value, min, max, step, slider_width) {
 		var range = max - min,
@@ -138,26 +148,25 @@
 	},
 	_keyAction = function(event) {
 		var code = event.keyCode;
+		if ( ! (code == 39 || code == 37 || code == 36 || code == 35)) return;
+		_eventCancel(event);
+		$Slider = $(this).data('handle');
+		var data = $Slider.data();
+		data.options.onStart.call(data.element, data.value);
 		if (code == 39) { // right
-			_eventCancel(event);
-			_nextSliderValue($(this).data('handle'), 1);
+			_nextSliderValue($Slider, 1);
 		}
 		if (code == 37) { // left
-			_eventCancel(event);
-			_nextSliderValue($(this).data('handle'), -1);
+			_nextSliderValue($Slider, -1);
 		}
 		if (code == 36) { // home
-			_eventCancel(event);
-			var $slider = $(this).data('handle');
-			var data = $slider.data();
-			_setPositionFromValue($slider, data.min);
+			_setPositionFromValue($Slider, data.min);
 		}
 		if (code == 35) { // end
-			_eventCancel(event);
-			var $slider = $(this).data('handle');
-			var data = $slider.data();
-			_setPositionFromValue($slider, data.max);
+			_setPositionFromValue($Slider, data.max);
 		}
+		data.options.onChanged.call(data.element, data.value);
+		$Slider = null;
 	},
 	_nextSliderValue = function($slider, direction) {
 		var data = $slider.data();
@@ -176,7 +185,7 @@
 		}
 		var drawing = _calcNewSize(value, data.min, data.max, data.step, data.slider_width);
 		_setPosition($slider, drawing.position);
-		_setValue($slider, value, data.options.onEnd);
+		_setValue($slider, value);
 	},
 	_setDisabled = function($slider, value) {
 		$slider.data('disabled', value);
@@ -228,21 +237,30 @@
 			$element = $(this).hide(),
 			$root = $('<span class="slider"/>').bind(Mouse_down + EventNameSpace, _jump).bind('mouseenter.' + EventNameSpace, _enter).bind('mouseleave.' + EventNameSpace, _leave).bind('keydown.' + EventNameSpace, _keyAction),
 			$bar = $('<span class="slider-bar"/>'),
+			$status = $('<span class="slider-status"/>'),
 			$progress = $('<span class="slider-progress"/>'),
 			$handle = $('<span class="slider-handle" tabindex="0"/>').bind(Mouse_down + EventNameSpace, _mouseStart).bind('mouseenter.' + EventNameSpace, _setActive).bind('mouseleave.' + EventNameSpace, _removeActive),
 			$tooltip = $('<span class="slider-tooltip" style="display:none"/>'),
+			$arrow_down = $('<span class="slider-down"/>').bind(Mouse_down + EventNameSpace, function() { _nextSliderValue($handle, -1); }),
+			$arrow_up = $('<span class="slider-up"/>').bind(Mouse_down + EventNameSpace, function() { _nextSliderValue($handle, 1); }),
 			min_attr = $element.attr('min'),
-			min = min_attr != undefined ? parseInt(min_attr) : options.min,
+			min = min_attr != undefined ? parseInt(min_attr) : parseInt(options.min),
 			max_attr = $element.attr('max'),
-			max = max_attr != undefined ? parseInt(max_attr) : options.max,
+			max = max_attr != undefined ? parseInt(max_attr) : parseInt(options.max),
 			step_attr = $element.attr('step'),
-			step = step_attr != undefined ? parseInt(step_attr) : options.step,
+			step = step_attr != undefined ? parseInt(step_attr) : parseInt(options.step),
 			value_attr = $element.attr('value'),
-			value = value_attr != '' ? parseInt(value_attr) : parseInt(max / 2 + min),
+			value_standard = typeof options.value == 'number' ? parseInt(options.value) : parseInt(max / 2 + min),
+			value = value_attr != undefined ? parseInt(value_attr) : value_standard,
 			disabled_attr = $element.attr('disabled'),
-			disabled = disabled_attr != undefined ? disabled_attr : options.disabled;
+			disabled = disabled_attr != undefined ? disabled_attr : options.disabled,
+			status = options.status != false ? parseInt(options.status) : min;
 			
-			$root.data({handle: $handle}).append($bar, $progress, $handle, $tooltip).insertAfter($element.data('slider', $handle));
+			$root.data({handle: $handle}).append($bar, $status, $progress, $handle, $tooltip).insertAfter($element.data('slider', $handle));
+			
+			if (Is_touch_device) {
+				$root.before($arrow_down).after($arrow_up);
+			}
 			
 			var slider_width = $bar.width(),
 			slider_left = $bar.offset().left,
@@ -251,6 +269,7 @@
 			$handle.data({
 				element: $element,
 				root: $root,
+				status: $status,
 				progress: $progress,
 				tooltip: $tooltip,
 				slider_left: slider_left,
@@ -261,6 +280,7 @@
 				min: min,
 				step: step,
 				disabled: disabled,
+				status_value: status,
 				options: options,
 				timer: null
 			});
@@ -268,6 +288,7 @@
 			_setPosition($handle, drawing.position);
 			_setValue($handle, value);
 			_setDisabled($handle, disabled);
+			_setStatus($handle, status);
 			
 		});
 		
@@ -286,7 +307,8 @@
 				min: data.min,
 				max: data.max,
 				step: data.step,
-				disabled: data.disabled
+				disabled: data.disabled,
+				status: data.status_value
 			};
 		}
 		if (typeof arg == 'object') {
@@ -312,9 +334,10 @@
 					return data.value;
 				},
 				set: function() {
+					if ($Slider) return;
 					var drawing = _calcNewSize(value, data.min, data.max, data.step, data.slider_width);
 					_setPosition($slider, drawing.position);
-					_setValue($slider, value, data.options.onEnd);
+					_setValue($slider, value);
 				}
 			},
 			min: {
@@ -352,6 +375,14 @@
 				},
 				set: function() {
 					_setDisabled($slider, value);
+				}
+			},
+			status: {
+				get: function() {
+					return data.status_value;
+				},
+				set: function() {
+					_setStatus($slider, value);
 				}
 			}
 		};

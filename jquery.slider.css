@@ -48,11 +48,40 @@
  	-webkit-touch-callout: none;
  	user-select: none;
 }
+.slider-status {
+ 	position: absolute;
+ 	top: 9px;
+ 	left: 1px;
+ 	z-index: 3;
+ 	display: block;
+ 	width: 0px;
+ 	height: 5px;
+ 	line-height: 5px;
+ 	margin: 0;
+ 	padding: 0;
+ 	overflow: hidden;
+ 	-moz-border-radius: 2px;
+ 	-webkit-border-radius: 2px;
+ 	border-radius: 2px;
+ 	background-color: #aaa;
+ 	background-image: -moz-linear-gradient(#ccc, #999);
+ 	background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#bbb), to(#999));
+ 	background-image: -webkit-linear-gradient(#cecece, #bebebe);
+ 	background-image: -o-linear-gradient(#bbb, #999);
+ 	background-image: -ms-linear-gradient(#bbb, #999);
+ 	background-image: linear-gradient(#bbb, #999);
+ 	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#bbbbbb', endColorstr='#999999');
+ 	-moz-user-select: none;
+ 	-khtml-user-select: none;
+ 	-webkit-user-select: none;
+ 	-webkit-touch-callout: none;
+ 	user-select: none;
+}
 .slider-progress {
  	position: absolute;
  	top: 9px;
- 	left: 0;
- 	z-index: 3;
+ 	left: 1px;
+ 	z-index: 4;
  	display: block;
  	width: 0px;
  	height: 5px;
@@ -81,7 +110,7 @@
  	position: absolute;
  	top: 3px;
  	left: 0;
- 	z-index: 3;
+ 	z-index: 5;
  	display: block;
  	width: 12px;
  	height: 15px;
@@ -142,7 +171,7 @@
 	position: absolute;
 	top: -25px;
 	left: 0;
-	z-index: 4;
+	z-index: 5;
 	margin-left: -7px;
 	padding: 2px 5px;
 	font-size: 83%;
@@ -170,6 +199,7 @@
 	position: absolute;
 	top: 100%;
 	left: 2px;
+	z-index: 5;
 	display: block;
 	width: 0;
 	height: 0;
@@ -244,4 +274,14 @@
 }
 .disabled .slider-tooltip:after {
 	border-top-color: #ddd;
+}
+.slider-down, .slider-up {
+	display: inline-block;
+	width: 16px;
+	height: 20px;
+	margin: 2px;
+	background: url(arrow_left.png) no-repeat center;
+}
+.slider-up {
+	background-image: url(arrow_right.png);
 }
