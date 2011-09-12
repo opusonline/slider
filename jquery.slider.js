@@ -154,10 +154,10 @@
 		var data = $Slider.data();
 		data.options.onStart.call(data.element, data.value);
 		if (code == 39) { // right
-			_nextSliderValue($Slider, 1);
+			_nextSliderValue($Slider);
 		}
 		if (code == 37) { // left
-			_nextSliderValue($Slider, -1);
+			_prevSliderValue($Slider);
 		}
 		if (code == 36) { // home
 			_setPositionFromValue($Slider, data.min);
@@ -168,9 +168,14 @@
 		data.options.onChanged.call(data.element, data.value);
 		$Slider = null;
 	},
-	_nextSliderValue = function($slider, direction) {
+	_nextSliderValue = function($slider) {
 		var data = $slider.data();
-		var new_value = data.value + direction * data.step;
+		var new_value = data.value + data.step;
+		_setPositionFromValue($slider, new_value);
+	},
+	_prevSliderValue = function($slider) {
+		var data = $slider.data();
+		var new_value = (Math.ceil(data.value / data.step) - 1) * data.step;
 		_setPositionFromValue($slider, new_value);
 	},
 	_setPositionFromValue = function($slider, value) {
@@ -233,6 +238,14 @@
 				if ($Slider) return;
 				$handle.removeClass('active');
 			},
+			_stepDown = function(event) {
+				event.preventDefault();
+				_prevSliderValue($handle);
+			},
+			_stepUp = function(event) {
+				event.preventDefault();
+				_nextSliderValue($handle);
+			},
 			
 			$element = $(this).hide(),
 			$root = $('<span class="slider"/>').bind(Mouse_down + EventNameSpace, _jump).bind('mouseenter.' + EventNameSpace, _enter).bind('mouseleave.' + EventNameSpace, _leave).bind('keydown.' + EventNameSpace, _keyAction),
@@ -241,8 +254,8 @@
 			$progress = $('<span class="slider-progress"/>'),
 			$handle = $('<span class="slider-handle" tabindex="0"/>').bind(Mouse_down + EventNameSpace, _mouseStart).bind('mouseenter.' + EventNameSpace, _setActive).bind('mouseleave.' + EventNameSpace, _removeActive),
 			$tooltip = $('<span class="slider-tooltip" style="display:none"/>'),
-			$arrow_down = $('<span class="slider-down"/>').bind(Mouse_down + EventNameSpace, function() { _nextSliderValue($handle, -1); }),
-			$arrow_up = $('<span class="slider-up"/>').bind(Mouse_down + EventNameSpace, function() { _nextSliderValue($handle, 1); }),
+			$arrow_down = $('<span class="slider-down"/>').bind(Mouse_down + EventNameSpace, _stepDown),
+			$arrow_up = $('<span class="slider-up"/>').bind(Mouse_down + EventNameSpace, _stepUp),
 			min_attr = $element.attr('min'),
 			min = min_attr != undefined ? parseInt(min_attr) : parseInt(options.min),
 			max_attr = $element.attr('max'),
@@ -405,10 +418,10 @@
 		var data = $slider.data();
 		var _methods = {
 			up: function() {
-				_nextSliderValue($slider, 1);
+				_nextSliderValue($slider);
 			},
 			down: function() {
-				_nextSliderValue($slider, -1);
+				_prevSliderValue($slider);
 			},
 			min: function() {
 				_setPositionFromValue($slider, data.min);

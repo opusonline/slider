@@ -280,8 +280,9 @@
 	width: 16px;
 	height: 20px;
 	margin: 2px;
-	background: url(arrow_left.png) no-repeat center;
+	background: url(arrow_left.png) no-repeat center bottom;
 }
 .slider-up {
+	margin-left: 4px;
 	background-image: url(arrow_right.png);
 }
